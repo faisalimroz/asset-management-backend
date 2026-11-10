@@ -17,6 +17,10 @@ const (
 	ActionAssetReturned       = "ASSET_RETURNED"
 	ActionRequestCreated      = "REQUEST_CREATED"
 	ActionRequestStatusChange = "REQUEST_STATUS_CHANGED"
+	ActionAttendanceCheckIn   = "ATTENDANCE_CHECK_IN"
+	ActionAttendanceCheckOut  = "ATTENDANCE_CHECK_OUT"
+	ActionLeaveRequested      = "LEAVE_REQUESTED"
+	ActionLeaveStatusChange   = "LEAVE_STATUS_CHANGED"
 )
 
 // AuditLog tracks critical business actions for compliance and IT oversight

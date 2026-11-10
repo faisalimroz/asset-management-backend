@@ -510,6 +510,210 @@
       ]
     },
     {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "Check-In (Employee)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"present\",\n  \"notes\": \"Morning check-in at office desk\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attendance/check-in",
+              "host": ["{{baseUrl}}"],
+              "path": ["attendance", "check-in"]
+            }
+          }
+        },
+        {
+          "name": "Check-Out (Employee)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Evening check-out, all tasks completed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attendance/check-out",
+              "host": ["{{baseUrl}}"],
+              "path": ["attendance", "check-out"]
+            }
+          }
+        },
+        {
+          "name": "My Attendance Logs (Employee)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/attendance/my-logs?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["attendance", "my-logs"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Attendance Report (HR Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/attendance/report?department=Engineering&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["attendance", "report"],
+              "query": [
+                { "key": "department", "value": "Engineering" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leave Management",
+      "item": [
+        {
+          "name": "Submit Leave Request (Employee)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_type\": \"casual\",\n  \"start_date\": \"2026-11-20T00:00:00Z\",\n  \"end_date\": \"2026-11-22T00:00:00Z\",\n  \"reason\": \"Family wedding and personal travel\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leaves",
+              "host": ["{{baseUrl}}"],
+              "path": ["leaves"]
+            }
+          }
+        },
+        {
+          "name": "List Leave Requests (HR: All / Employee: Own)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leaves?status=pending&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["leaves"],
+              "query": [
+                { "key": "status", "value": "pending" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Leave Request Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leaves/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["leaves", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve / Reject Leave Request (HR Only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"review_notes\": \"Approved by HR. Adequate departmental coverage confirmed.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leaves/:id/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["leaves", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Reports & Audit Logs",
       "item": [
         {

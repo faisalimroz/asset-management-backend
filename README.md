@@ -1,26 +1,33 @@
-# Company Asset Management Platform (Golang)
+# Company Asset & Attendance Management Platform (Golang)
 
-A robust, lightweight, and secure **Company Asset Management Platform** backend built with **Go (Golang)**, **Gin**, **GORM**, and **JWT-based Role-Based Access Control (RBAC)**.
+A robust, lightweight, and secure **Company Asset & Attendance Management Platform** backend built with **Go (Golang)**, **Gin**, **GORM**, and **JWT-based Role-Based Access Control (RBAC)**.
 
-The system tracks physical and digital company assets (e.g., laptops, monitors, accessories, security keys) across their entire lifecycle, managing inventory, employee assignments, return workflows, and equipment requests across three distinct roles: **IT**, **HR**, and **Employees**.
+The platform tracks company-owned physical and digital assets across their entire lifecycle, manages equipment allocations and requests, and provides end-to-end employee attendance tracking (daily check-in/check-out, working hours calculation, and leave management) across three distinct user roles: **IT**, **HR**, and **Employees**.
 
 ---
 
 ## Features & Highlights
 
-- **Clean Layered Architecture:** Decoupled Handlers, Services, Repositories, Models, and Middlewares.
+- **Clean Layered Architecture:** Decoupled Handlers -> Services -> Repositories -> Models -> Middlewares.
 - **Role-Based Access Control (RBAC):** JWT middleware enforcing granular permissions for `it`, `hr`, and `employee` roles.
 - **Dual-Database Support:**
   - **SQLite (Default):** Zero-configuration pure-Go driver (`github.com/glebarez/sqlite`) running locally without CGO or GCC.
   - **PostgreSQL:** Production-grade PostgreSQL support via GORM and `pgx`.
-- **Automatic Migration & Auto-Seeding:** Automatically creates tables and seeds demo IT, HR, and Employee users alongside sample hardware assets on first run.
-- **Lifecycle Asset Tracking:** Transitions between `available`, `assigned`, `maintenance`, and `retired`.
-- **Complete Assignment Audit History:** Tracks historical and active asset allocations, assigners, return dates, and condition notes.
-- **HR Onboarding & Offboarding Visibility:** HR-specific endpoints to audit active assets per employee and facilitate returns during offboarding.
-- **Employee Self-Service:** Employees can submit hardware requests and view their assigned assets.
-- **Centralized Error Handling:** Consistent JSON response envelopes with standardized HTTP status codes (`400`, `401`, `403`, `404`, `409`, `500`).
-- **Input Validation:** Strict validation using Go struct tags (`go-playground/validator`).
-- **Comprehensive Test Suite:** 100% passing integration tests covering authentication, RBAC boundaries, asset mutations, request approvals, and reporting.
+- **Automatic Migration & Auto-Seeding:** Automatically creates tables and seeds demo IT, HR, and Employee users alongside sample hardware assets, attendance records, and leave requests.
+- **Asset Lifecycle Management:** Transitions between `available`, `assigned`, `maintenance`, and `retired`.
+- **Equipment Allocation & Returns:** Complete audit history tracking assigner, timestamps, return dates, and condition notes.
+- **Daily Attendance Tracking:**
+  - One-click daily check-in (`present`, `remote`, `half_day`) and check-out.
+  - Automatic work hours calculation upon check-out.
+  - Protection against duplicate check-ins or check-outs within the same calendar day.
+  - Scoped personal attendance logs for employees.
+  - Company-wide attendance reports with date and department filtering for HR.
+- **Leave Management:**
+  - Employees submit leave requests (`sick`, `casual`, `annual`, `unpaid`).
+  - Input validation ensuring `end_date` is on or after `start_date`.
+  - HR reviews and approves/rejects leave requests with optional review notes.
+- **Centralized Error Handling:** Standardized JSON response envelopes with HTTP status codes (`400`, `401`, `403`, `404`, `409`, `500`).
+- **Comprehensive Test Suite:** 100% passing integration tests covering authentication, RBAC boundaries, asset mutations, request approvals, attendance check-in/out, and leave workflows.
 
 ---
 
@@ -38,25 +45,25 @@ The system tracks physical and digital company assets (e.g., laptops, monitors, 
 |    - CORS & Logger                                          |
 |    - Centralized Error / Panic Recovery                     |
 |    - JWT Authentication Middleware                          |
-|    - Role-Based Access Control (RBAC)                       |
+|    - Role-Based Access Control (RBAC: it, hr, employee)     |
 +-------------------------------------------------------------+
                                |
                                v
 +-------------------------------------------------------------+
 |                     Handlers / Controllers                  |
-|    (AuthHandler, AssetHandler, AssignmentHandler, ...)      |
+|   (Auth, Asset, Assignment, Request, Attendance, Leave)     |
 +-------------------------------------------------------------+
                                |
                                v
 +-------------------------------------------------------------+
 |                     Business Logic Services                 |
-|    (AuthService, AssetService, AssignmentService, ...)      |
+|   (Auth, Asset, Assignment, Request, Attendance, Leave)     |
 +-------------------------------------------------------------+
                                |
                                v
 +-------------------------------------------------------------+
 |                    Data Repositories (GORM)                 |
-|   (UserRepository, AssetRepository, RequestRepository, ...) |
+|   (User, Asset, Assignment, Request, Attendance, Leave)     |
 +-------------------------------------------------------------+
                                |
                                v
@@ -68,92 +75,39 @@ The system tracks physical and digital company assets (e.g., laptops, monitors, 
 
 ---
 
-## Project Structure
-
-```
-asset-management-backend/
-├── cmd/
-│   └── server/
-│       └── main.go                 # Application bootstrap & graceful shutdown
-├── internal/
-│   ├── config/
-│   │   └── config.go               # Environment configuration loader
-│   ├── models/
-│   │   ├── user.go                 # User entity & role definitions
-│   │   ├── asset.go                # Asset entity, categories & statuses
-│   │   ├── assignment.go           # AssetAssignment entity
-│   │   ├── request.go              # AssetRequest entity & workflow statuses
-│   │   └── audit_log.go            # AuditLog compliance entity
-│   ├── repository/
-│   │   ├── user_repository.go      # User data access
-│   │   ├── asset_repository.go     # Asset querying, filters & inventory aggregations
-│   │   ├── assignment_repository.go# Assignment history & active checks
-│   │   ├── request_repository.go   # Request queries
-│   │   └── audit_repository.go     # Audit log storage
-│   ├── services/
-│   │   ├── auth_service.go         # Authentication & token issuance
-│   │   ├── asset_service.go        # Asset lifecycle & CRUD logic
-│   │   ├── assignment_service.go   # Asset allocation & return logic
-│   │   ├── request_service.go      # Request submission & review logic
-│   │   └── report_service.go       # Valuation metrics & HR allocation summaries
-│   ├── handlers/
-│   │   ├── auth_handler.go         # /api/v1/auth endpoints
-│   │   ├── asset_handler.go        # /api/v1/assets endpoints
-│   │   ├── assignment_handler.go   # /api/v1/assignments endpoints
-│   │   ├── request_handler.go      # /api/v1/requests endpoints
-│   │   ├── user_handler.go         # /api/v1/users endpoints
-│   │   └── report_handler.go       # /api/v1/reports endpoints
-│   ├── middleware/
-│   │   ├── auth_middleware.go      # JWT token verification
-│   │   ├── rbac_middleware.go      # Role restriction enforcement
-│   │   ├── error_middleware.go     # Centralized error handler & panic recovery
-│   │   └── cors_middleware.go      # Cross-origin headers
-│   └── router/
-│       └── router.go               # Gin route registrations & grouping
-├── pkg/
-│   ├── database/
-│   │   ├── db.go                   # GORM DB connection (SQLite & PostgreSQL)
-│   │   ├── migrate.go              # Schema AutoMigrate
-│   │   └── seed.go                 # Demo users & initial hardware assets
-│   └── utils/
-│       ├── errors.go               # AppError standard constructors
-│       ├── jwt.go                  # JWT claim generation & parsing
-│       ├── password.go             # Bcrypt hashing & verification
-│       └── response.go             # Standardized JSON envelopes
-├── tests/
-│   ├── test_helper.go              # In-memory DB setup & request simulator
-│   ├── auth_test.go                # Auth & registration tests
-│   ├── asset_test.go               # Asset CRUD, uniqueness & RBAC tests
-│   ├── assignment_test.go          # Assignment & return workflow tests
-│   ├── request_test.go             # Asset request & approval tests
-│   └── report_test.go              # Inventory metrics & HR audit tests
-├── postman_collection.json         # Ready-to-import Postman API collection
-├── .env.example                    # Environment configuration template
-├── go.mod                          # Go module dependencies
-└── README.md                       # Complete documentation
-```
-
----
-
 ## User Roles & Permissions Matrix
 
 | Endpoint | Method | Description | IT | HR | Employee |
 | :--- | :--- | :--- | :---: | :---: | :---: |
+| **Authentication** | | | | | |
 | `/api/v1/auth/register` | `POST` | Register a new user | Yes | Yes | Yes |
 | `/api/v1/auth/login` | `POST` | Login & receive JWT | Yes | Yes | Yes |
 | `/api/v1/auth/me` | `GET` | View authenticated profile | Yes | Yes | Yes |
+| **Assets Module** | | | | | |
 | `/api/v1/assets` | `GET` | List all assets with search/filters | **Yes** | **Yes** | No (403) |
 | `/api/v1/assets/:id` | `GET` | View asset details & assignment history | **Yes** | **Yes** | No (403) |
 | `/api/v1/assets` | `POST` | Create new hardware/digital asset | **Yes** | No (403) | No (403) |
 | `/api/v1/assets/:id` | `PUT` | Update asset details / status | **Yes** | No (403) | No (403) |
 | `/api/v1/assets/:id` | `DELETE` | Retire / delete asset | **Yes** | No (403) | No (403) |
+| **Assignments & Requests** | | | | | |
 | `/api/v1/assignments` | `POST` | Assign available asset to employee | **Yes** | No (403) | No (403) |
 | `/api/v1/assignments/:id/return` | `PUT` | Mark asset as returned | **Yes** | **Yes** | No (403) |
-| `/api/v1/assignments/my-assets` | `GET` | View current and past assigned assets | Yes | Yes | **Yes** |
+| `/api/v1/assignments/my-assets` | `GET` | View personal assigned assets | Yes | Yes | **Yes** |
 | `/api/v1/assignments` | `GET` | View all system assignments | **Yes** | **Yes** | No (403) |
 | `/api/v1/requests` | `POST` | Submit hardware/accessory request | Yes | Yes | **Yes** |
 | `/api/v1/requests` | `GET` | View requests (Employees see own only) | **All** | **All** | **Own Only** |
 | `/api/v1/requests/:id/status`| `PUT` | Approve / Reject / Fulfill request | **Yes** | **Yes** | No (403) |
+| **Attendance Module** | | | | | |
+| `/api/v1/attendance/check-in` | `POST` | Daily check-in (present, remote, etc.) | Yes | Yes | **Yes** |
+| `/api/v1/attendance/check-out` | `POST` | Daily check-out & compute work hours | Yes | Yes | **Yes** |
+| `/api/v1/attendance/my-logs` | `GET` | Personal attendance history | Yes | Yes | **Yes** |
+| `/api/v1/attendance/report` | `GET` | Company-wide report (date/dept filter) | No (403) | **Yes** | No (403) |
+| **Leave Management** | | | | | |
+| `/api/v1/leaves` | `POST` | Submit leave request (sick, casual, etc.) | Yes | Yes | **Yes** |
+| `/api/v1/leaves` | `GET` | List leaves (HR: all, Employee: own) | No (403) | **All** | **Own Only** |
+| `/api/v1/leaves/:id` | `GET` | View leave details | No (403) | **All** | **Own Only** |
+| `/api/v1/leaves/:id/status` | `PUT` | Approve or reject leave request | No (403) | **Yes** | No (403) |
+| **Reports & Organization** | | | | | |
 | `/api/v1/users` | `GET` | List employees with active asset counts | **Yes** | **Yes** | No (403) |
 | `/api/v1/users/:id/assets` | `GET` | View employee's allocated asset history | **Yes** | **Yes** | No (403) |
 | `/api/v1/reports/inventory` | `GET` | Inventory counts, category & valuation | **Yes** | **Yes** | No (403) |
@@ -167,34 +121,21 @@ When running with `AUTO_SEED=true`, the following credentials are pre-configured
 
 | Role | Name | Email | Password | Pre-seeded State |
 | :--- | :--- | :--- | :--- | :--- |
-| **IT Admin** | Alex Turner | `it.admin@company.com` | `Admin@123` | Full admin privileges |
-| **HR Manager** | Sarah Connor | `hr.manager@company.com` | `HR@123` | Employee offboarding & asset return access |
-| **Employee 1** | John Doe | `john.doe@company.com` | `Employee@123` | Has 2 active assets (Dell XPS 15 & 4K Monitor) |
-| **Employee 2** | Jane Smith | `jane.smith@company.com` | `Employee@123` | Has 1 pending request for Apple Studio Display |
+| **IT Admin** | Alex Turner | `it.admin@company.com` | `Admin@123` | Full IT administration |
+| **HR Manager** | Sarah Connor | `hr.manager@company.com` | `HR@123` | Attendance reporting & leave approval |
+| **Employee 1** | John Doe | `john.doe@company.com` | `Employee@123` | Assigned Laptop & Monitor; approved vacation leave |
+| **Employee 2** | Jane Smith | `jane.smith@company.com` | `Employee@123` | Pending display request; pending sick leave |
 
 ---
 
 ## Getting Started
 
-### Prerequisites
-- **Go 1.22+** (tested with Go 1.26)
-- Git
-
-### 1. Clone & Setup Configuration
-```bash
-git clone <repository-url>
-cd asset-management-backend
-
-# Copy default environment settings
-cp .env.example .env
-```
-
-### 2. Environment Variables (`.env`)
+### 1. Configuration (`.env`)
 ```ini
 SERVER_PORT=8080
 ENVIRONMENT=development
 
-# Database Configuration (Default is pure-Go SQLite; no setup needed)
+# Database Settings (Default is pure-Go SQLite)
 DB_DRIVER=sqlite
 DB_PATH=./asset_management.db
 
@@ -207,15 +148,15 @@ DB_PATH=./asset_management.db
 # DB_NAME=asset_management
 # DB_SSLMODE=disable
 
-# Security & JWT
+# Authentication
 JWT_SECRET=super-secret-company-asset-jwt-key-2026!
 JWT_EXPIRATION_HOURS=24
 
-# Seed demo users & assets on startup
+# Seed demo users, assets, attendance & leaves on startup
 AUTO_SEED=true
 ```
 
-### 3. Run the Server
+### 2. Run Application
 ```bash
 go run ./cmd/server
 ```
@@ -225,96 +166,112 @@ The server will start listening at `http://localhost:8080`.
 
 ## Running Automated Tests
 
-Run the comprehensive test suite:
+Run the complete test suite:
 ```bash
 go test -v ./tests/...
 ```
 
-All tests execute against an isolated in-memory SQLite database and test:
-- User registration, duplicate detection, and login with bcrypt hashing.
-- Role-Based Access Control (ensuring employees and HR cannot execute unauthorized actions).
-- Asset creation, serial number uniqueness constraints, and soft deletion.
-- Asset assignment lifecycle (state transitions from `available` -> `assigned` -> `available` on return).
-- Employee request submissions, list scoping, and IT/HR approval transitions.
+Test coverage includes:
+- User registration, duplicate checks, login, and JWT claims validation.
+- RBAC boundary enforcement across Employee, HR, and IT roles.
+- Asset CRUD, serial number uniqueness, and lifecycle transitions.
+- Asset assignment and offboarding return flows.
+- Attendance check-in, duplicate checks, check-out, and work hour calculation.
+- Leave request submission, date validation, and HR review workflows.
 - Financial inventory valuations and audit trail logs.
 
 ---
 
 ## API Reference & Sample Requests
 
-All API responses follow standard JSON structures:
+All responses follow standard envelopes:
 
-**Success Response Envelope:**
 ```json
 {
   "success": true,
-  "message": "Operation completed successfully",
+  "message": "Operation successful",
   "data": { ... }
 }
 ```
 
-**Paginated Response Envelope:**
-```json
-{
-  "success": true,
-  "message": "Data retrieved successfully",
-  "data": [ ... ],
-  "meta": {
-    "page": 1,
-    "limit": 10,
-    "total": 45,
-    "total_pages": 5
-  }
-}
-```
+### 1. Attendance Workflow
 
-**Error Response Envelope:**
-```json
-{
-  "success": false,
-  "message": "Error description",
-  "error": {
-    "code": 400,
-    "details": "Validation details or context"
-  }
-}
-```
-
----
-
-### Workflow Examples with `curl`
-
-#### 1. Authentication
-
-**Login as IT Admin:**
+#### Daily Check-In (Employee)
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
+curl -X POST http://localhost:8080/api/v1/attendance/check-in \
+  -H "Authorization: Bearer <EMPLOYEE_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "it.admin@company.com",
-    "password": "Admin@123"
+    "status": "present",
+    "notes": "Checked in at office workstation"
   }'
 ```
 
-**Save Token in environment variable:**
+#### Daily Check-Out (Employee)
 ```bash
-TOKEN="<JWT_TOKEN_FROM_LOGIN>"
+curl -X POST http://localhost:8080/api/v1/attendance/check-out \
+  -H "Authorization: Bearer <EMPLOYEE_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notes": "Completed tasks for sprint 12"
+  }'
+```
+*Note: The platform automatically computes `work_hours` as the difference between `check_out_time` and `check_in_time`.*
+
+#### View Personal Attendance Logs (Employee)
+```bash
+curl -X GET "http://localhost:8080/api/v1/attendance/my-logs?page=1&limit=20" \
+  -H "Authorization: Bearer <EMPLOYEE_TOKEN>"
 ```
 
-**Get Current User Profile:**
+#### Company-Wide Attendance Report (HR Only)
 ```bash
-curl -X GET http://localhost:8080/api/v1/auth/me \
-  -H "Authorization: Bearer $TOKEN"
+curl -X GET "http://localhost:8080/api/v1/attendance/report?department=Engineering&start_date=2026-11-01&end_date=2026-11-30" \
+  -H "Authorization: Bearer <HR_TOKEN>"
 ```
 
 ---
 
-#### 2. Asset Management (IT Only)
+### 2. Leave Management Workflow
 
-**Add a New Asset:**
+#### Submit Leave Request (Employee)
+```bash
+curl -X POST http://localhost:8080/api/v1/leaves \
+  -H "Authorization: Bearer <EMPLOYEE_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "leave_type": "casual",
+    "start_date": "2026-11-20T00:00:00Z",
+    "end_date": "2026-11-22T00:00:00Z",
+    "reason": "Personal family travel"
+  }'
+```
+
+#### List Leave Requests (HR: All / Employee: Own)
+```bash
+curl -X GET "http://localhost:8080/api/v1/leaves?status=pending" \
+  -H "Authorization: Bearer <HR_TOKEN>"
+```
+
+#### Approve / Reject Leave Request (HR Only)
+```bash
+curl -X PUT http://localhost:8080/api/v1/leaves/<LEAVE_ID>/status \
+  -H "Authorization: Bearer <HR_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "approved",
+    "review_notes": "Approved by HR. Coverage confirmed."
+  }'
+```
+
+---
+
+### 3. Asset Management Workflow
+
+#### Create Asset (IT Only)
 ```bash
 curl -X POST http://localhost:8080/api/v1/assets \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer <IT_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "MacBook Pro 16 M3 Max",
@@ -323,166 +280,38 @@ curl -X POST http://localhost:8080/api/v1/assets \
     "status": "available",
     "purchase_date": "2026-01-15T00:00:00Z",
     "purchase_cost": 3499.00,
-    "specifications": "Apple M3 Max 16-core CPU, 40-core GPU, 64GB Unified RAM, 2TB SSD"
+    "specifications": "Apple M3 Max, 64GB RAM, 2TB SSD"
   }'
 ```
 
-**List Assets with Filter & Pagination (IT & HR):**
-```bash
-curl -X GET "http://localhost:8080/api/v1/assets?category=Laptop&status=available&page=1&limit=10" \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-**Get Asset Details with Assignment History:**
-```bash
-curl -X GET http://localhost:8080/api/v1/assets/<ASSET_ID> \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-**Update Asset:**
-```bash
-curl -X PUT http://localhost:8080/api/v1/assets/<ASSET_ID> \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "MacBook Pro 16 M3 Max (Engineering Stock)",
-    "status": "available"
-  }'
-```
-
-**Retire / Delete Asset:**
-```bash
-curl -X DELETE http://localhost:8080/api/v1/assets/<ASSET_ID> \
-  -H "Authorization: Bearer $TOKEN"
-```
-
----
-
-#### 3. Asset Assignment Lifecycle
-
-**Assign Asset to Employee (IT Only):**
+#### Assign Asset to Employee (IT Only)
 ```bash
 curl -X POST http://localhost:8080/api/v1/assignments \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer <IT_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
     "asset_id": "<ASSET_ID>",
-    "user_id": "<EMPLOYEE_USER_ID>",
-    "notes": "Issued during engineering onboarding; desk setup bundle"
+    "user_id": "<EMPLOYEE_ID>",
+    "notes": "Issued during engineering onboarding"
   }'
 ```
-*Note: This automatically transitions the asset's status from `available` to `assigned`.*
 
-**Employee Viewing Their Assigned Assets:**
-```bash
-curl -X GET http://localhost:8080/api/v1/assignments/my-assets \
-  -H "Authorization: Bearer $EMPLOYEE_TOKEN"
-```
-
-**Mark Asset as Returned (IT & HR):**
+#### Return Asset (IT / HR Offboarding)
 ```bash
 curl -X PUT http://localhost:8080/api/v1/assignments/<ASSIGNMENT_ID>/return \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer <HR_OR_IT_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
     "returned_status": "available",
-    "notes": "Hardware inspected, wiped, and placed back in main inventory"
+    "notes": "Hardware inspected and returned to storage"
   }'
-```
-*Note: This timestamps `returned_at` and automatically switches the asset status back to `available`.*
-
----
-
-#### 4. Asset Requests Workflow
-
-**Employee Submitting Request:**
-```bash
-curl -X POST http://localhost:8080/api/v1/requests \
-  -H "Authorization: Bearer $EMPLOYEE_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "asset_category": "Accessory",
-    "item_requested": "Keychron Q1 Pro Mechanical Keyboard",
-    "reason": "Ergonomic keyboard for coding workflow"
-  }'
-```
-
-**List Requests (IT & HR see all; Employees see own):**
-```bash
-curl -X GET "http://localhost:8080/api/v1/requests?status=pending" \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-**IT/HR Approving Request:**
-```bash
-curl -X PUT http://localhost:8080/api/v1/requests/<REQUEST_ID>/status \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "status": "approved",
-    "review_notes": "Approved by IT Lead. Dispatched from IT storage."
-  }'
-```
-
----
-
-#### 5. HR Offboarding & Employee Inventory
-
-**HR List Employees with Current Allocated Asset Counts:**
-```bash
-curl -X GET http://localhost:8080/api/v1/users \
-  -H "Authorization: Bearer $HR_TOKEN"
-```
-
-**HR View All Allocated Assets for Specific Employee:**
-```bash
-curl -X GET http://localhost:8080/api/v1/users/<EMPLOYEE_USER_ID>/assets \
-  -H "Authorization: Bearer $HR_TOKEN"
-```
-
----
-
-#### 6. Reports & Audit Trail
-
-**Inventory Valuation & Breakdown (IT & HR):**
-```bash
-curl -X GET http://localhost:8080/api/v1/reports/inventory \
-  -H "Authorization: Bearer $TOKEN"
-```
-Sample response:
-```json
-{
-  "success": true,
-  "message": "inventory summary retrieved successfully",
-  "data": {
-    "total_assets": 7,
-    "total_valuation": 8229.00,
-    "by_status": {
-      "available": 4,
-      "assigned": 2,
-      "maintenance": 1
-    },
-    "by_category": {
-      "Laptop": 2,
-      "Monitor": 2,
-      "Accessory": 2,
-      "Security": 1
-    }
-  }
-}
-```
-
-**System Audit Trail (IT Only):**
-```bash
-curl -X GET "http://localhost:8080/api/v1/reports/audit-logs?page=1&limit=20" \
-  -H "Authorization: Bearer $TOKEN"
 ```
 
 ---
 
 ## Postman Collection
 
-Import `postman_collection.json` into Postman to immediately access pre-configured requests with environment variables for `baseUrl` and `token`.
+Import [`postman_collection.json`](file:///c:/asset-management-backend/postman_collection.json) into Postman to immediately access all pre-configured endpoints across Authentication, Assets, Assignments, Requests, Attendance, and Leave Management.
 
 ---
 

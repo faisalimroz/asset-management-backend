@@ -18,6 +18,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.Asset{},
 		&models.AssetAssignment{},
 		&models.AssetRequest{},
+		&models.AttendanceLog{},
+		&models.LeaveRequest{},
 		&models.AuditLog{},
 	)
 	if err != nil {

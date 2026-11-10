@@ -203,7 +203,82 @@ func SeedData(db *gorm.DB) error {
 		return err
 	}
 
-	// 5. Initial Audit Log
+	// 5. Create Demo Attendance Logs
+	yesterday := now.AddDate(0, 0, -1)
+	yesterdayStr := yesterday.Format("2006-01-02")
+	todayStr := now.Format("2006-01-02")
+
+	yCheckIn1 := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 9, 0, 0, 0, time.Local)
+	yCheckOut1 := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 17, 30, 0, 0, time.Local)
+	tCheckIn1 := time.Date(now.Year(), now.Month(), now.Day(), 9, 15, 0, 0, time.Local)
+
+	yCheckIn2 := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 9, 30, 0, 0, time.Local)
+	yCheckOut2 := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 18, 0, 0, 0, time.Local)
+
+	attendanceLogs := []models.AttendanceLog{
+		{
+			UserID:       emp1.ID,
+			Date:         yesterdayStr,
+			CheckInTime:  &yCheckIn1,
+			CheckOutTime: &yCheckOut1,
+			WorkHours:    8.5,
+			Status:       models.AttendanceStatusPresent,
+			Notes:        "On-site engineering shift",
+		},
+		{
+			UserID:      emp1.ID,
+			Date:        todayStr,
+			CheckInTime: &tCheckIn1,
+			WorkHours:   0,
+			Status:      models.AttendanceStatusRemote,
+			Notes:       "Working remotely today",
+		},
+		{
+			UserID:       emp2.ID,
+			Date:         yesterdayStr,
+			CheckInTime:  &yCheckIn2,
+			CheckOutTime: &yCheckOut2,
+			WorkHours:    8.5,
+			Status:       models.AttendanceStatusPresent,
+		},
+	}
+
+	for i := range attendanceLogs {
+		if err := db.Create(&attendanceLogs[i]).Error; err != nil {
+			return err
+		}
+	}
+
+	// 6. Create Demo Leave Requests
+	hrManagerID := hrManager.ID
+	leave1 := models.LeaveRequest{
+		UserID:      emp1.ID, // John Doe
+		LeaveType:   models.LeaveTypeAnnual,
+		StartDate:   now.AddDate(0, 0, 10),
+		EndDate:     now.AddDate(0, 0, 14),
+		Reason:      "Family vacation",
+		Status:      models.LeaveStatusApproved,
+		ApprovedBy:  &hrManagerID,
+		ReviewNotes: "Approved by HR. Have a great vacation!",
+	}
+
+	leave2 := models.LeaveRequest{
+		UserID:    emp2.ID, // Jane Smith
+		LeaveType: models.LeaveTypeSick,
+		StartDate: now.AddDate(0, 0, 1),
+		EndDate:   now.AddDate(0, 0, 2),
+		Reason:    "Doctor appointment and recovery",
+		Status:    models.LeaveStatusPending,
+	}
+
+	if err := db.Create(&leave1).Error; err != nil {
+		return err
+	}
+	if err := db.Create(&leave2).Error; err != nil {
+		return err
+	}
+
+	// 7. Initial Audit Log
 	audit := models.AuditLog{
 		UserID:    itAdmin.ID,
 		UserEmail: itAdmin.Email,

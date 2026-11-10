@@ -21,6 +21,8 @@ func SetupRouter(
 	requestHandler *handlers.RequestHandler,
 	reportHandler *handlers.ReportHandler,
 	userHandler *handlers.UserHandler,
+	attendanceHandler *handlers.AttendanceHandler,
+	leaveHandler *handlers.LeaveHandler,
 ) *gin.Engine {
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -123,6 +125,28 @@ func SetupRouter(
 			{
 				usersGroup.GET("", userHandler.ListEmployees)
 				usersGroup.GET("/:id/assets", userHandler.GetEmployeeAssets)
+			}
+
+			// -----------------------------------------------------
+			// Attendance Module: Check-in, Check-out, My logs, HR Report
+			// -----------------------------------------------------
+			attendanceGroup := protected.Group("/attendance")
+			{
+				attendanceGroup.POST("/check-in", attendanceHandler.CheckIn)
+				attendanceGroup.POST("/check-out", attendanceHandler.CheckOut)
+				attendanceGroup.GET("/my-logs", attendanceHandler.GetMyLogs)
+				attendanceGroup.GET("/report", middleware.RequireRoles(models.RoleHR), attendanceHandler.GetAttendanceReport)
+			}
+
+			// -----------------------------------------------------
+			// Leave Management Module: Submit, List, Review
+			// -----------------------------------------------------
+			leavesGroup := protected.Group("/leaves")
+			{
+				leavesGroup.POST("", leaveHandler.CreateLeave)
+				leavesGroup.GET("", leaveHandler.ListLeaves)
+				leavesGroup.GET("/:id", leaveHandler.GetLeave)
+				leavesGroup.PUT("/:id/status", middleware.RequireRoles(models.RoleHR), leaveHandler.UpdateLeaveStatus)
 			}
 
 			// -----------------------------------------------------

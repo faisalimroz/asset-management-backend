@@ -102,6 +102,8 @@ func SetupTestApp(t *testing.T) *TestSuite {
 	assignmentRepo := repository.NewAssignmentRepository(db)
 	requestRepo := repository.NewRequestRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
+	attendanceRepo := repository.NewAttendanceRepository(db)
+	leaveRepo := repository.NewLeaveRepository(db)
 
 	// Services
 	authService := services.NewAuthService(userRepo, auditRepo, cfg)
@@ -109,6 +111,8 @@ func SetupTestApp(t *testing.T) *TestSuite {
 	assignmentService := services.NewAssignmentService(assignmentRepo, assetRepo, userRepo, auditRepo)
 	requestService := services.NewRequestService(requestRepo, auditRepo)
 	reportService := services.NewReportService(assetRepo, assignmentRepo, userRepo, auditRepo)
+	attendanceService := services.NewAttendanceService(attendanceRepo, auditRepo)
+	leaveService := services.NewLeaveService(leaveRepo, auditRepo)
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -117,6 +121,8 @@ func SetupTestApp(t *testing.T) *TestSuite {
 	requestHandler := handlers.NewRequestHandler(requestService)
 	reportHandler := handlers.NewReportHandler(reportService)
 	userHandler := handlers.NewUserHandler(reportService)
+	attendanceHandler := handlers.NewAttendanceHandler(attendanceService)
+	leaveHandler := handlers.NewLeaveHandler(leaveService)
 
 	r := router.SetupRouter(
 		cfg,
@@ -126,6 +132,8 @@ func SetupTestApp(t *testing.T) *TestSuite {
 		requestHandler,
 		reportHandler,
 		userHandler,
+		attendanceHandler,
+		leaveHandler,
 	)
 
 	return &TestSuite{
